@@ -1,12 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { Share, StatusBar, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
-import RNShake from 'react-native-shake';
-
-// Engenharia Alpha
-import { getFCMToken, requestUserPermission } from '../src/services/notification';
+import { scheduleDailyNotification } from '../src/services/notification';
 import { getStreak, updateStreak } from '../src/utils/streakCounter';
 
-// Importando os dados reais da pasta src/data
 import sparks from '../src/data/sparks.json';
 
 export default function HomeScreen() {
@@ -19,27 +16,21 @@ export default function HomeScreen() {
   useEffect(() => {
     const initApp = async () => {
       try {
-        await requestUserPermission();
-        await getFCMToken();
         await updateStreak();
         const s = await getStreak();
         setStreak(s || 0);
+        scheduleDailyNotification();
       } catch (err) {
         console.log("Erro na inicialização nativa, mas o app segue...");
       }
     };
     initApp();
-
-    const subscription = RNShake.addListener(() => {
-      generateSpark();
-    });
-    return () => subscription.remove();
   }, []);
 
   const generateSpark = () => {
     const sorteio = sparks[Math.floor(Math.random() * sparks.length)];
     setCurrentSpark(sorteio);
-    Vibration.vibrate(100); // Feedback tátil [cite: 2026-02-02]
+    Vibration.vibrate(100); 
   };
 
   const handleShare = async () => {

@@ -1,47 +1,38 @@
 
-import messaging from '@react-native-firebase/messaging';
+import PushNotification from 'react-native-push-notification';
+import sparks from '../data/sparks.json';
 
-export const requestUserPermission = async () => {
-  const authStatus = await messaging().requestPermission();
-  const enabled =
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-  if (enabled) {
-    console.log('Authorization status:', authStatus);
-  }
+// Function to get the first sentence of a text
+const getFirstSentence = (text) => {
+  if (!text) return '';
+  const firstLine = text.split('\n')[0]; // Get the first line
+  const sentenceMatch = firstLine.match(/[^.!?]*[.!?]/); // Get the first sentence
+  return sentenceMatch ? sentenceMatch[0] : firstLine;
 };
 
-export const getFCMToken = async () => {
-  const fcmToken = await messaging().getToken();
-  if (fcmToken) {
-    console.log('Your Firebase Token is:', fcmToken);
-  } else {
-    console.log('Failed to get the token');
-  }
-};
+PushNotification.createChannel(
+  {
+    channelId: 'spark-daily', // (required)
+    channelName: 'Spark Daily', // (required)
+    channelDescription: 'A channel for daily sparks', // (optional) default: undefined.
+    importance: 4, // (optional) default: 4. Defines whether a notification is of high importance or not.
+    vibrate: true, // (optional) default: true. Creates the default vibration pattern if true.
+  },
+  (created) => console.log(`createChannel 'spark-daily' returned '${created}'`) // (optional) callback returns whether the channel was created, false means it already existed.
+);
 
-export const sendTestNotification = () => {
-  messaging().setBackgroundMessageHandler(async remoteMessage => {
-    console.log('Message handled in the background!', remoteMessage);
-  });
+export const scheduleDailyNotification = () => {
+  const randomSpark = sparks[Math.floor(Math.random() * sparks.length)];
+  const notificationMessage = getFirstSentence(randomSpark.text);
 
-  messaging().getInitialNotification().then(remoteMessage => {
-    if (remoteMessage) {
-      console.log(
-        'Notification caused app to open from quit state:',
-        remoteMessage.notification,
-      );
-    }
+  PushNotification.cancelAllLocalNotifications(); // Clear previous notifications
+  PushNotification.localNotificationSchedule({
+    channelId: 'spark-daily',
+    title: '✨ Your Daily Spark ✨',
+    message: notificationMessage,
+    date: new Date(new Date().setHours(7, 0, 0, 0)), // 7:00 AM
+    repeatType: 'day',
+    vibrate: true,
+    vibration: 300,
   });
-
-  messaging().onMessage(async remoteMessage => {
-    console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
-  });
-
-  // Dispara uma notificação local de teste
-  messaging().onMessage(async remoteMessage => {
-    console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
-  });
-  
 };
