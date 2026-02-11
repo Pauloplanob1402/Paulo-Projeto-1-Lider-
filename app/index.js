@@ -1,51 +1,102 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Share, StatusBar, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import RNShake from 'react-native-shake';
+
+// Engenharia Alpha
+import { getFCMToken, requestUserPermission } from '../src/services/notification';
+import { getStreak, updateStreak } from '../src/utils/streakCounter';
+
+// Importando os dados reais da pasta src/data
+import sparks from '../src/data/sparks.json';
 
 export default function HomeScreen() {
   const [currentSpark, setCurrentSpark] = useState({ 
-    title: "Toque ou Chacoalhe", 
-    content: "Para receber sua dose de liderança." 
+    id: 1,
+    text: "Exemplo inspira mais que discurso.\nAção valida palavras.\nSeja o padrão." 
   });
-
-  // Função temporária enquanto a engine não volta
-  const generateSpark = () => {
-    const mensagens = [
-      { title: "Lidere pelo Exemplo", content: "Sua equipe faz o que você faz, não o que você diz." },
-      { title: "Decisão Alpha", content: "Mais vale uma decisão rápida do que uma dúvida eterna." },
-      { title: "Foco Total", content: "Onde o foco vai, a energia flui." }
-    ];
-    const sorteio = mensagens[Math.floor(Math.random() * mensagens.length)];
-    setCurrentSpark(sorteio);
-    console.log("Veredito gerado!"); 
-  };
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
+    const initApp = async () => {
+      try {
+        await requestUserPermission();
+        await getFCMToken();
+        await updateStreak();
+        const s = await getStreak();
+        setStreak(s || 0);
+      } catch (err) {
+        console.log("Erro na inicialização nativa, mas o app segue...");
+      }
+    };
+    initApp();
+
     const subscription = RNShake.addListener(() => {
       generateSpark();
     });
     return () => subscription.remove();
   }, []);
 
+  const generateSpark = () => {
+    const sorteio = sparks[Math.floor(Math.random() * sparks.length)];
+    setCurrentSpark(sorteio);
+    Vibration.vibrate(100); // Feedback tátil [cite: 2026-02-02]
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${currentSpark.text}\n\n— Spark • Líder Alpha ⚡`,
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>{currentSpark.title}</Text>
-        <Text style={styles.content}>{currentSpark.content}</Text>
+      <StatusBar barStyle="light-content" />
+      
+      <View style={styles.topInfo}>
+        <Text style={styles.header}>⚡ SPARK LÍDER ALPHA</Text>
+        <Text style={styles.counter}>#{currentSpark.id}/{sparks.length}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={generateSpark}>
-        <Text style={styles.buttonText}>GERAR FAÍSCA ⚡</Text>
-      </TouchableOpacity>
+      <View style={styles.card}>
+        <Text style={styles.quoteMark}>“</Text>
+        <Text style={styles.content}>{currentSpark.text}</Text>
+        <Text style={[styles.quoteMark, { textAlign: 'right' }]}>”</Text>
+      </View>
+
+      <View style={styles.streakBadge}>
+        <Text style={styles.streakText}>🔥 {streak} DIAS SEGUIDOS</Text>
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={generateSpark}>
+          <Text style={styles.buttonText}>GERAR FAÍSCA ⚡</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+          <Text style={styles.shareText}>COMPARTILHAR 🔗</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  card: { backgroundColor: '#333', padding: 30, borderRadius: 15, width: '100%', marginBottom: 30, borderWidth: 1, borderColor: '#444' },
-  title: { color: '#E6F4FE', fontSize: 24, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-  content: { color: '#ccc', fontSize: 18, textAlign: 'center', lineHeight: 26 },
-  button: { backgroundColor: '#E6F4FE', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 30 },
-  buttonText: { color: '#1a1a1a', fontWeight: 'bold', fontSize: 16 }
+  container: { flex: 1, backgroundColor: '#000', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 60, paddingHorizontal: 25 },
+  topInfo: { alignItems: 'center' },
+  header: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 4, opacity: 0.4 },
+  counter: { color: '#2E86DE', fontSize: 12, fontWeight: 'bold', marginTop: 5 },
+  card: { backgroundColor: '#111', padding: 30, borderRadius: 30, width: '100%', minHeight: 280, justifyContent: 'center', borderWidth: 1, borderColor: '#222' },
+  quoteMark: { color: '#2E86DE', fontSize: 50, fontWeight: 'bold', opacity: 0.3, height: 40 },
+  content: { color: '#E6F4FE', fontSize: 22, textAlign: 'center', lineHeight: 36, fontWeight: '600' },
+  streakBadge: { backgroundColor: 'rgba(255, 165, 0, 0.1)', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255, 165, 0, 0.3)' },
+  streakText: { color: '#FFA500', fontSize: 14, fontWeight: '900' },
+  buttonContainer: { width: '100%', alignItems: 'center', gap: 15 },
+  button: { backgroundColor: '#2E86DE', paddingVertical: 20, width: '90%', borderRadius: 40 },
+  buttonText: { color: '#fff', fontWeight: '900', fontSize: 18, textAlign: 'center' },
+  shareButton: { paddingVertical: 10 },
+  shareText: { color: '#2E86DE', fontWeight: 'bold', fontSize: 14, opacity: 0.8 }
 });
