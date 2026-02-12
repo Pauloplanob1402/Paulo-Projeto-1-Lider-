@@ -1,45 +1,18 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Expo
+.expo/
 
-# testing
-/coverage
+# Pastas de build nativo (gerenciadas pelo Prebuild/EAS)
+/android
+/ios
 
-# production
-/build
+# Arquivos de ambiente
+.env
 
-# misc
-.DS_Store
-*.pem
+# Dependências
+node_modules/
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-/dist
-
-# editor folders and files
-.vscode*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# expo-updates
-/ios/main.jsbundle
-/android/app/src/main/assets/main.jsbundle
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
