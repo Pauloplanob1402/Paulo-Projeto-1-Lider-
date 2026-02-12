@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1E90FF',
   },
   titleContainer: {
     marginTop: 50,
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   text: {
-    color: '#ccc',
+    color: '#FFFFFF',
     fontSize: 16,
   }
 });

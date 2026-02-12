@@ -1,38 +1,67 @@
+# To learn more about how to use Nix to configure your environment
+# see: https://developers.google.com/idx/guides/customize-idx-env
 { pkgs, ... }: {
-  # Canal mais recente para evitar erros de versão do Node (Unsupported engine)
-  channel = "stable-24.11"; 
+  # Which nixpkgs channel to use.
+  channel = "stable-24.05";
 
+  # Use https://search.nixos.org/packages to find packages
   packages = [ 
     pkgs.nodejs_20 
-    pkgs.jdk21_headless
-    pkgs.gradle
-    pkgs.ngrok # Adicionado para garantir o túnel do Expo
+    pkgs.jdk21_headless 
+    pkgs.gradle 
   ];
 
+  # Sets environment variables in the workspace
   env = { 
     EXPO_USE_FAST_RESOLVER = "1"; 
   };
 
   idx = {
-    extensions = [ "msjsdiag.vscode-react-native" ];
-    
+    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
+    extensions = [
+      "msjsdiag.vscode-react-native"
+      "fwcd.kotlin"
+    ];
+
     workspace = {
+      # Runs when a workspace is first created with this `dev.nix` file
       onCreate = {
-        # Instalação forçada das dependências essenciais para o seu plano gratuito
-        setup = ''
-          npm install && \
-          npm install expo@latest react-native-push-notification && \
-          npx expo prebuild --platform android
+        install-and-prebuild = ''
+          npm ci --prefer-offline --no-audit --no-progress --timing && \
+          npm i @expo/ngrok@^4.1.0 react@latest react-dom@latest react-native@latest && \
+          npm i -D @types/react@latest && \
+          npx -y expo install expo-dev-client && \
+          npx -y expo prebuild --platform android
+          
+          # Add more memory to the JVM
+          if [ -f "android/gradle.properties" ]; then
+            sed -i 's/org.gradle.jvmargs=-Xmx2048m/org.gradle.jvmargs=-Xmx4g/' "android/gradle.properties"
+          fi
+        '';
+      };
+
+      # Runs when a workspace restarted
+      onStart = {
+        android = ''
+          echo -e "\033[1;33mWaiting for Android emulator to be ready...\033[0m"
+          adb -s emulator-5554 wait-for-device && \
+          npm run android
         '';
       };
     };
 
+    # Enable previews and customize configuration
     previews = {
       enable = true;
       previews = {
         web = {
+          # Forçamos a porta 8081 que é o padrão do Metro Bundler
           command = [ "npm" "run" "web" "--" "--port" "8081" ];
           manager = "web";
+        };
+        android = {
+          # Mudamos para o manager correto do Android para o IDX abrir o emulador real
+          manager = "android";
         };
       };
     };
