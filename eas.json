@@ -12,7 +12,14 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "workflow": "generic",
+        "image": "latest"
+      },
+      "cache": {
+        "clear": true
+      }
     }
   },
   "submit": {
